@@ -1,0 +1,7 @@
+# Real infra values live here — NEVER commit. Copy config.env.example -> config.env.
+config.env
+
+# scratch / logs pulled from servers during diagnosis
+*.log
+*.bak-*
+/tmp-out/
