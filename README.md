@@ -46,10 +46,20 @@ Run on the Bitbucket host (it ssh-es to the reference hosts):
 
 | Script | What | Touches prod? |
 |---|---|---|
+| `scripts/diag-{bitbucket,confluence,jira}.sh` | Self-contained per-host probe (run as root on each box; `RELAY=` overridable). Compares what the relay offers each host + each JRE's `disabledAlgorithms`/providers | read-only |
 | `scripts/00-probe-relay.sh` | Baseline: relay cipher, JRE version, AES length, recent errors | read-only |
 | `scripts/01-compare-java-security.sh` | Diff `java.security` vs working Jira (find EC/ECDSA disable) | read-only |
 | `scripts/02-ssldebug-clienthello.sh {on\|read\|off}` | Capture ClientHello via `javax.net.debug` | **restart** |
 | `scripts/03-swap-jre.sh {fetch\|swap\|rollback\|verify}` | Last resort: swap in Jira's known-good JRE | **restart** |
+| `scripts/10-jre-swap.sh {stage\|swap\|verify}` | Back up old JRE + stage replacement (`$NEW_JRE_SRC`) + point Bitbucket at it; writes a manifest | **restart** |
+| `scripts/11-jre-rollback.sh [status]` | Undo `10-jre-swap.sh` exactly, using the manifest; restore original JRE | **restart** |
+
+> `10`/`11` are the cleaner, manifest-driven version of `03`: the swap records
+> what it changed so the rollback is exact, not a guess. Set `NEW_JRE_SRC` /
+> `NEW_JRE_STAGE` in `config.env`. **The replacement JRE must be 8u261+ or
+> Java 11 if the relay is TLS 1.3-only** — an older Java 8 (e.g. Jira's 8u181)
+> won't fix it. `10-jre-swap.sh stage` validates the JRE and warns about this
+> before any restart.
 
 ## Hard rules baked into the scripts
 
